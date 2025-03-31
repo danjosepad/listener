@@ -1,9 +1,9 @@
 export enum UserClass {
-  BK = 'Blade Knight',
-  SM = 'Soul Master',
+  BK = 'BK',
+  SM = 'SM',
   ELF = 'Elf',
-  MG = 'Magic Gladiator',
-  DL = 'Dark Lord'
+  MG = 'MG',
+  DL = 'DL'
 }
 
 export interface User {

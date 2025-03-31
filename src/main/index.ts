@@ -3,11 +3,15 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-import { getUser } from '../store'
+import { exec } from 'child_process'
+import { getUser, handleUpdateUser } from './store'
+import { UserClass } from '../models/user'
+
+let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
@@ -19,8 +23,10 @@ function createWindow(): void {
     }
   })
 
+  mainWindow.webContents.openDevTools()
+
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow?.show()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -54,7 +60,25 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
-  getUser()
+  ipcMain.on('update-user', (_event, data: { class: UserClass; level: string }) => {
+    handleUpdateUser(data)
+  })
+
+  ipcMain.on('get-user', (event) => {
+    event.returnValue = getUser()
+  })
+
+  ipcMain.on('get-client-level', (event) => {
+    getLevelFromWindowTitle()
+      .then((level) => {
+        event.sender.send('update-live-level', { level })
+        console.log(`Level: ${level}`)
+      })
+      .catch((err) => {
+        console.error(err)
+      })
+  })
+
   createWindow()
 
   app.on('activate', function () {
@@ -73,9 +97,34 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.whenReady().then(() => {
-  createWindow()
-})
+const getLevelFromWindowTitle = (): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    exec(
+      'powershell "Get-Process | Where-Object {$_.ProcessName -eq \'main\'} | Select-Object MainWindowTitle"',
+      (err, stdout, stderr) => {
+        if (err) {
+          reject(err)
+          return
+        }
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+        if (stderr) {
+          reject(new Error(stderr))
+          return
+        }
+
+        const title = stdout.trim()
+        if (title) {
+          // Analisa o título para extrair o valor do Level
+          const levelMatch = title.match(/Level:\s*(\d+)/)
+          if (levelMatch && levelMatch[1]) {
+            resolve(parseInt(levelMatch[1], 10)) // Converte para inteiro
+          } else {
+            reject(new Error('Valor do Level não encontrado.'))
+          }
+        } else {
+          reject(new Error('Janela não encontrada.'))
+        }
+      }
+    )
+  })
+}

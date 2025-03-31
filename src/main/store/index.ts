@@ -1,6 +1,7 @@
 import Store from 'electron-store'
-import { User, UserClass } from '../models/user'
+import { User, UserClass } from '../../models/user'
 
+console.log('ACCESS')
 const defaultUser: User = {
   class: UserClass.MG,
   level: 1
@@ -21,3 +22,10 @@ export const getUser = (): User => {
     level: store.get('level') as number
   }
 }
+
+const storeController = {
+  handleUpdateUser,
+  getUser
+}
+
+export default storeController

@@ -1,31 +1,98 @@
 import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+
+import { UserClass } from '../../models/user'
+import React from 'react'
 
 function App(): JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+  // const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
+
+  let interval = {} as NodeJS.Timeout
+
+  const [level, setLevel] = React.useState(1)
+  const [userClass, setUserClass] = React.useState(UserClass.MG)
+
+  const [userLiveLevel, setUserLiveLevel] = React.useState(1)
+
+  const handleSelect = (event: React.ChangeEvent<HTMLSelectElement>): void => {
+    console.log({ target: event.target.value })
+    setUserClass(event.target.value as UserClass)
+  }
+
+  const handleUpdateLevel = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    setLevel(Number(event.target.value))
+  }
+
+  const handleSaveData = (): void => {
+    window.electron.ipcRenderer.send('update-user', {
+      class: userClass,
+      level: level.toString()
+    })
+  }
+
+  const handleOnStart = (): void => {
+    interval = setInterval(() => {
+      window.electron.ipcRenderer.send('get-client-level')
+    }, 1500)
+  }
+
+  const handleOnStop = (): void => {
+    clearInterval(interval)
+  }
+
+  React.useEffect(() => {
+    const user = window.electron.ipcRenderer.sendSync('get-user')
+
+    if (user) {
+      setUserClass(user.class)
+      setLevel(user.level)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    window.electron.ipcRenderer.on('update-live-level', (_event, data) => {
+      setUserLiveLevel(data.level)
+    })
+
+    return (): void => {
+      clearInterval(interval)
+    }
+  })
 
   return (
     <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
+      <div>
+        <label htmlFor="classe">Classe:</label>
+        <select onChange={handleSelect} value={userClass}>
+          <option value="BK">Black Knight</option>
+          <option value="SM">Soul Master</option>
+          <option value="DL">Dark Lord</option>
+          <option value="MG">Magic Gladiator</option>
+        </select>
+
+        <label htmlFor="nivel">Nível:</label>
+        <input
+          type="number"
+          id="nivel"
+          value={level}
+          min="10"
+          max="999"
+          onChange={handleUpdateLevel}
+        />
+
+        <button onClick={handleSaveData}>Salvar</button>
+
+        <br />
+        <strong>Seu nível atual é:</strong>
+        <br />
+        <h4>{userLiveLevel}</h4>
+
+        <button id="iniciar" onClick={handleOnStart}>
+          Iniciar monitoramento
+        </button>
+
+        <button id="parar" onClick={handleOnStop}>
+          Parar monitoramento
+        </button>
       </div>
       <Versions></Versions>
     </>
