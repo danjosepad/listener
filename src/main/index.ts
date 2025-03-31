@@ -100,7 +100,7 @@ app.on('window-all-closed', () => {
 const getLevelFromWindowTitle = (): Promise<number> => {
   return new Promise((resolve, reject) => {
     exec(
-      'powershell "Get-Process | Where-Object {$_.ProcessName -eq \'main\'} | Select-Object MainWindowTitle"',
+      'powershell "Get-Process | Where-Object {$_.ProcessName -eq \'MainMU\'} | Select-Object MainWindowTitle"',
       (err, stdout, stderr) => {
         if (err) {
           reject(err)

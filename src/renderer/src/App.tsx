@@ -6,12 +6,14 @@ import React from 'react'
 function App(): JSX.Element {
   // const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
 
-  let interval = {} as NodeJS.Timeout
+  const [interval, setIntervalValue] = React.useState<NodeJS.Timeout | null>(null)
 
   const [level, setLevel] = React.useState(1)
   const [userClass, setUserClass] = React.useState(UserClass.MG)
 
   const [userLiveLevel, setUserLiveLevel] = React.useState(1)
+
+  const [isRunning, setIsRunning] = React.useState(false)
 
   const handleSelect = (event: React.ChangeEvent<HTMLSelectElement>): void => {
     console.log({ target: event.target.value })
@@ -30,13 +32,18 @@ function App(): JSX.Element {
   }
 
   const handleOnStart = (): void => {
-    interval = setInterval(() => {
+    setIsRunning(true)
+    setIntervalValue(setInterval(() => {
       window.electron.ipcRenderer.send('get-client-level')
-    }, 1500)
+    }, 1500))
   }
 
   const handleOnStop = (): void => {
-    clearInterval(interval)
+    setIsRunning(false)
+    if (interval) {
+      clearInterval(interval)
+      setIntervalValue(null)
+    }
   }
 
   React.useEffect(() => {
@@ -53,9 +60,9 @@ function App(): JSX.Element {
       setUserLiveLevel(data.level)
     })
 
-    return (): void => {
-      clearInterval(interval)
-    }
+    // return (): void => {
+    //   clearInterval(interval)
+    // }
   })
 
   return (
@@ -69,7 +76,8 @@ function App(): JSX.Element {
           <option value="MG">Magic Gladiator</option>
         </select>
 
-        <label htmlFor="nivel">Nível:</label>
+        <br />
+        <label htmlFor="nivel">Nível máximo de Reset:</label>
         <input
           type="number"
           id="nivel"
@@ -86,15 +94,14 @@ function App(): JSX.Element {
         <br />
         <h4>{userLiveLevel}</h4>
 
-        <button id="iniciar" onClick={handleOnStart}>
+        <button id="iniciar" disabled={isRunning} onClick={handleOnStart}>
           Iniciar monitoramento
         </button>
 
-        <button id="parar" onClick={handleOnStop}>
+        <button id="parar" disabled={!isRunning} onClick={handleOnStop}>
           Parar monitoramento
         </button>
       </div>
-      <Versions></Versions>
     </>
   )
 }
