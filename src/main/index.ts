@@ -11,10 +11,19 @@ import path from 'path'
 
 
 let mainWindow: BrowserWindow | null = null
+let lastSoundPlayTime = 0
+const SOUND_DEBOUNCE_MS = 3000 // Minimum time between sounds in milliseconds
 
 const playSound = async (): Promise<void> => {
   try {
+    const now = Date.now()
+    console.log({ now, lastSoundPlayTime, rule: now - lastSoundPlayTime < SOUND_DEBOUNCE_MS })
+    if (now - lastSoundPlayTime < SOUND_DEBOUNCE_MS) {
+      return
+    }
+    
     const soundPath = path.join(app.getAppPath(), 'resources', 'coin-sound.mp3');
+    lastSoundPlayTime = now;
     await soundPlay.play(soundPath);
     console.log('Som reproduzido com sucesso!');
   } catch (error) {
@@ -134,10 +143,9 @@ const getLevelFromWindowTitle = (): Promise<number> => {
 
         const title = stdout.trim()
         if (title) {
-          // Analisa o título para extrair o valor do Level
           const levelMatch = title.match(/Level:\s*(\d+)/)
           if (levelMatch && levelMatch[1]) {
-            resolve(parseInt(levelMatch[1], 10)) // Converte para inteiro
+            resolve(parseInt(levelMatch[1], 10))
           } else {
             reject(new Error('Valor do Level não encontrado.'))
           }
