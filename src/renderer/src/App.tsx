@@ -48,7 +48,6 @@ function App(): JSX.Element {
           })
 
         if (shouldPlaySound(newLevel, userClass, level) && !hasSoundAlreadyPlayed.played && hasSoundAlreadyPlayed.level !== newLevel) {
-          console.log('ENTERED')
           window.electron.ipcRenderer.send('play-sound')
           setHasSoundAlreadyPlayed({
             level: newLevel,

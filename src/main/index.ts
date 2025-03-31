@@ -73,9 +73,6 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
-
   ipcMain.on('update-user', (_event, data: { class: UserClass; level: string }) => {
     handleUpdateUser(data)
   })
@@ -85,7 +82,6 @@ app.whenReady().then(() => {
   })
 
   ipcMain.on('play-sound', (event, data) => {
-    console.log('playing sound...')
     playSound()
   })
 
