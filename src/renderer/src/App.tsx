@@ -1,51 +1,31 @@
 import Versions from './components/Versions'
-import React from 'react'
-import { UserClass } from '../../models/user'
+import electronLogo from './assets/electron.svg'
 
 function App(): JSX.Element {
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
 
-  const [level, setLevel] = React.useState(1)
-  const [userClass, setUserClass] = React.useState(UserClass.MG)
-
-  const handleSelect = (event: React.ChangeEvent<HTMLSelectElement>): void => {
-    setUserClass(event.target.value as UserClass)
-  }
-
-  const handleUpdateLevel = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    setLevel(Number(event.target.value))
-  }
-
-  const handleSaveData = (): void => {
-    handleUpdateUser({
-      class: userClass,
-      level: level.toString()
-    })
-  }
-
   return (
     <>
-      <div>
-        <label htmlFor="classe">Classe:</label>
-        <select onSelect={handleSelect}>
-          <option value="BK">Black Knight</option>
-          <option value="SM">Soul Master</option>
-          <option value="DL">Dark Lord</option>
-          <option value="MG">Magic Gladiator</option>
-        </select>
-
-        <label htmlFor="nivel">Nível:</label>
-        <input type="number" id="nivel" min="10" max="999" onChange={handleUpdateLevel} />
-
-        <button onClick={handleSaveData}>Salvar</button>
-
-        <strong>Seu nível atual é:</strong>
-        <br />
-        <h4 id="nivel-atual" />
-
-        <button id="iniciar">Iniciar aviso</button>
-
-        <button id="parar">Parar aviso</button>
+      <img alt="logo" className="logo" src={electronLogo} />
+      <div className="creator">Powered by electron-vite</div>
+      <div className="text">
+        Build an Electron app with <span className="react">React</span>
+        &nbsp;and <span className="ts">TypeScript</span>
+      </div>
+      <p className="tip">
+        Please try pressing <code>F12</code> to open the devTool
+      </p>
+      <div className="actions">
+        <div className="action">
+          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
+            Documentation
+          </a>
+        </div>
+        <div className="action">
+          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
+            Send IPC
+          </a>
+        </div>
       </div>
       <Versions></Versions>
     </>
