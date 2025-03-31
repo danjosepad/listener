@@ -1,7 +1,6 @@
 import Store from 'electron-store'
 import { User, UserClass } from '../../models/user'
 
-console.log('ACCESS')
 const defaultUser: User = {
   class: UserClass.MG,
   level: 1

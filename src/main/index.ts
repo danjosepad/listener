@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, powerSaveBlocker  } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -6,8 +6,21 @@ import icon from '../../resources/icon.png?asset'
 import { exec } from 'child_process'
 import { getUser, handleUpdateUser } from './store'
 import { UserClass } from '../models/user'
+import soundPlay from 'sound-play'
+import path from 'path'
+
 
 let mainWindow: BrowserWindow | null = null
+
+const playSound = async (): Promise<void> => {
+  try {
+    const soundPath = path.join(app.getAppPath(), 'resources', 'coin-sound.mp3');
+    await soundPlay.play(soundPath);
+    console.log('Som reproduzido com sucesso!');
+  } catch (error) {
+    console.error('Erro ao reproduzir o som:', error);
+  }
+}
 
 function createWindow(): void {
   // Create the browser window.
@@ -19,10 +32,13 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      backgroundThrottling: false,
     }
   })
 
+  const id = powerSaveBlocker.start('prevent-app-suspension')
+  console.log({ powerStarted: powerSaveBlocker.isStarted(id)})
   mainWindow.webContents.openDevTools()
 
   mainWindow.on('ready-to-show', () => {
@@ -68,15 +84,21 @@ app.whenReady().then(() => {
     event.returnValue = getUser()
   })
 
-  ipcMain.on('get-client-level', (event) => {
-    getLevelFromWindowTitle()
-      .then((level) => {
-        event.sender.send('update-live-level', { level })
-        console.log(`Level: ${level}`)
-      })
-      .catch((err) => {
-        console.error(err)
-      })
+  ipcMain.on('play-sound', (event, data) => {
+    console.log('playing sound...')
+    playSound()
+  })
+
+
+  ipcMain.on('get-client-level', async (event) => {
+    try {
+      const level = await getLevelFromWindowTitle()
+      event.returnValue = level
+      console.log(`Level: ${level}`)
+    } catch (err) {
+      console.error(err)
+      event.returnValue = null
+    }
   })
 
   createWindow()
@@ -86,6 +108,8 @@ app.whenReady().then(() => {
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+ 
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -128,3 +152,5 @@ const getLevelFromWindowTitle = (): Promise<number> => {
     )
   })
 }
+
+

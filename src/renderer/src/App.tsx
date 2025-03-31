@@ -1,7 +1,6 @@
-import Versions from './components/Versions'
-
 import { UserClass } from '../../models/user'
 import React from 'react'
+import { shouldPlaySound } from './utils'
 
 function App(): JSX.Element {
   // const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
@@ -12,11 +11,14 @@ function App(): JSX.Element {
   const [userClass, setUserClass] = React.useState(UserClass.MG)
 
   const [userLiveLevel, setUserLiveLevel] = React.useState(1)
+  const [hasSoundAlreadyPlayed, setHasSoundAlreadyPlayed] = React.useState({
+    level: 1,
+    played: false,
+  })
 
   const [isRunning, setIsRunning] = React.useState(false)
 
   const handleSelect = (event: React.ChangeEvent<HTMLSelectElement>): void => {
-    console.log({ target: event.target.value })
     setUserClass(event.target.value as UserClass)
   }
 
@@ -34,7 +36,26 @@ function App(): JSX.Element {
   const handleOnStart = (): void => {
     setIsRunning(true)
     setIntervalValue(setInterval(() => {
-      window.electron.ipcRenderer.send('get-client-level')
+      const newLevel = window.electron.ipcRenderer.sendSync('get-client-level')
+      
+      if (newLevel !== null) {
+        setUserLiveLevel(newLevel)
+
+        if(hasSoundAlreadyPlayed.level !== newLevel) 
+          setHasSoundAlreadyPlayed({
+            level: newLevel,
+            played: false,
+          })
+
+        if (shouldPlaySound(newLevel, userClass, level) && !hasSoundAlreadyPlayed.played && hasSoundAlreadyPlayed.level !== newLevel) {
+          console.log('ENTERED')
+          window.electron.ipcRenderer.send('play-sound')
+          setHasSoundAlreadyPlayed({
+            level: newLevel,
+            played: true,
+          })
+        }
+      }
     }, 1500))
   }
 
@@ -54,16 +75,6 @@ function App(): JSX.Element {
       setLevel(user.level)
     }
   }, [])
-
-  React.useEffect(() => {
-    window.electron.ipcRenderer.on('update-live-level', (_event, data) => {
-      setUserLiveLevel(data.level)
-    })
-
-    // return (): void => {
-    //   clearInterval(interval)
-    // }
-  })
 
   return (
     <>
