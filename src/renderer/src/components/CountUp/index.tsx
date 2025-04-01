@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { useInView, useMotionValue, useSpring } from "framer-motion";
 
 interface CountUpProps {
@@ -26,7 +26,7 @@ export default function CountUp({
     onStart,
     onEnd,
 }: CountUpProps) {
-    const ref = useRef<HTMLSpanElement>(null);
+    const ref = React.useRef<HTMLSpanElement>(null);
     const motionValue = useMotionValue(direction === "down" ? to : from);
 
     // Calculate damping and stiffness based on duration
@@ -41,14 +41,14 @@ export default function CountUp({
     const isInView = useInView(ref, { once: true, margin: "0px" });
 
     // Set initial text content to the initial value based on direction
-    useEffect(() => {
+    React.useEffect(() => {
         if (ref.current) {
             ref.current.textContent = String(direction === "down" ? to : from);
         }
     }, [from, to, direction]);
 
     // Start the animation when in view and startWhen is true
-    useEffect(() => {
+    React.useEffect((): void | (() => void) => {
         if (isInView && startWhen) {
             if (typeof onStart === "function") {
                 onStart();
@@ -86,7 +86,7 @@ export default function CountUp({
     ]);
 
     // Update text content with formatted number on spring value change
-    useEffect(() => {
+    React.useEffect(() => {
         const unsubscribe = springValue.on("change", (latest: number) => {
             if (ref.current) {
                 const options = {

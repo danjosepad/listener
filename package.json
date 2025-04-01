@@ -1,7 +1,8 @@
 {
-  "name": "mu-helper",
+  "name": "mu-level-helper",
+  "productName": "MU Level Helper",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "A helper tool for MU Online level tracking",
   "main": "./out/main/index.js",
   "author": "example.com",
   "homepage": "https://electron-vite.org",

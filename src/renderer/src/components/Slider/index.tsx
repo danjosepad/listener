@@ -171,14 +171,14 @@ function Slider({
                 >
                     <motion.div
                         style={{
-                            scaleX: useTransform(() => {
+                            scaleX: useTransform((): void | number => {
                                 if (sliderRef.current) {
                                     const { width } = sliderRef.current.getBoundingClientRect();
                                     return 1 + overflow.get() / width;
                                 }
                             }),
                             scaleY: useTransform(overflow, [0, MAX_OVERFLOW], [1, 0.8]),
-                            transformOrigin: useTransform(() => {
+                            transformOrigin: useTransform((): void | string => {
                                 if (sliderRef.current) {
                                     const { left, width } = sliderRef.current.getBoundingClientRect();
                                     return clientX.get() < left + width / 2 ? "right" : "left";
