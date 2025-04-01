@@ -1,30 +1,29 @@
 import { app, shell, BrowserWindow, ipcMain, powerSaveBlocker  } from 'electron'
-import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
 import { exec } from 'child_process'
-import { getUser, handleUpdateUser } from './store'
+import { getUser, handleUpdateData, handleUpdateUser } from './store'
 import { UserClass } from '../models/user'
 import soundPlay from 'sound-play'
-import path from 'path'
+import * as path from 'path'
 
 
 let mainWindow: BrowserWindow | null = null
 let lastSoundPlayTime = 0
 const SOUND_DEBOUNCE_MS = 3000 // Minimum time between sounds in milliseconds
 
-const playSound = async (): Promise<void> => {
+const playSound = async (volume: number): Promise<void> => {
   try {
     const now = Date.now()
-    console.log({ now, lastSoundPlayTime, rule: now - lastSoundPlayTime < SOUND_DEBOUNCE_MS })
     if (now - lastSoundPlayTime < SOUND_DEBOUNCE_MS) {
       return
     }
     
     const soundPath = path.join(app.getAppPath(), 'resources', 'coin-sound.mp3');
     lastSoundPlayTime = now;
-    await soundPlay.play(soundPath);
+
+    await soundPlay.play(soundPath, Math.round(volume) / 100);
     console.log('Som reproduzido com sucesso!');
   } catch (error) {
     console.error('Erro ao reproduzir o som:', error);
@@ -34,13 +33,14 @@ const playSound = async (): Promise<void> => {
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 600,
+    height: 600,
+    resizable: false,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false,
       backgroundThrottling: false,
     }
@@ -48,10 +48,11 @@ function createWindow(): void {
 
   const id = powerSaveBlocker.start('prevent-app-suspension')
   console.log({ powerStarted: powerSaveBlocker.isStarted(id)})
-  mainWindow.webContents.openDevTools()
 
+  
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+    mainWindow?.webContents.openDevTools()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -64,7 +65,7 @@ function createWindow(): void {
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }
 }
 
@@ -82,6 +83,10 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  ipcMain.on('update-data', (_event, data: { type: 'class' | 'level', data: UserClass | number }) => {
+    handleUpdateData(data.type, data.data)
+  })
+
   ipcMain.on('update-user', (_event, data: { class: UserClass; level: string }) => {
     handleUpdateUser(data)
   })
@@ -90,8 +95,8 @@ app.whenReady().then(() => {
     event.returnValue = getUser()
   })
 
-  ipcMain.on('play-sound', (event, data) => {
-    playSound()
+  ipcMain.on('play-sound', (event, volume: number) => {
+    playSound(volume)
   })
 
 
