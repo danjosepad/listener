@@ -20,9 +20,13 @@ const playSound = async (volume: number): Promise<void> => {
       return
     }
     
-    const soundPath = path.join(app.getAppPath(), 'resources', 'coin-sound.mp3');
-    lastSoundPlayTime = now;
+    // Get the correct path for the sound file
+    const soundPath = is.dev
+      ? path.join(process.cwd(), 'resources', 'coin-sound.mp3')
+      : path.join(process.resourcesPath, 'resources', 'coin-sound.mp3');
 
+    lastSoundPlayTime = now;
+    console.log('Playing sound from:', soundPath);
     await soundPlay.play(soundPath, Math.round(volume) / 100);
     console.log('Som reproduzido com sucesso!');
   } catch (error) {
@@ -52,7 +56,6 @@ function createWindow(): void {
   
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
-    mainWindow?.webContents.openDevTools()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
