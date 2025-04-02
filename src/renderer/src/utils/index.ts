@@ -19,8 +19,10 @@ export const colors = {
     BK: [255, 0, 0],      // red
 }
 
-export const shouldPlaySound = (level: number, userClass: UserClass, maxResetLevel: number): boolean => {
+export const shouldPlaySound = (level: number, userClass: UserClass, maxResetLevel: number, lastTriggeredLevel: number): boolean => {
     const interval = [...classes[userClass], Number(maxResetLevel)]
-    console.log({ level, interval})
-    return interval.includes(level)
+
+    const nextTriggerLevel = interval.find(level => level > lastTriggeredLevel)
+
+    return interval.includes(level) || nextTriggerLevel < level
 }

@@ -82,9 +82,8 @@ function App(): JSX.Element {
         })
       }
 
-      console.log({ currentState, newLevel, level })
       if (
-        shouldPlaySound(newLevel, userClass, level) &&
+        shouldPlaySound(newLevel, userClass, level, currentState.level) &&
         !currentState.played &&
         currentState.level !== newLevel
       ) {
