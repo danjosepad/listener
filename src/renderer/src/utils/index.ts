@@ -22,7 +22,7 @@ export const colors = {
 export const shouldPlaySound = (level: number, userClass: UserClass, maxResetLevel: number, lastTriggeredLevel: number): boolean => {
     const interval = [...classes[userClass], Number(maxResetLevel)]
 
-    const nextTriggerLevel = interval.find(level => level > lastTriggeredLevel)
+    const nextTriggerLevel = lastTriggeredLevel >= maxResetLevel ? interval[0] : interval.find(level => level > lastTriggeredLevel)
 
     return interval.includes(level) || nextTriggerLevel < level
 }
