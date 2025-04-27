@@ -10,6 +10,7 @@
   },
   "conventionalCommits.scopes": [
     "components",
-    "store"
+    "store",
+    "main"
   ]
 }
