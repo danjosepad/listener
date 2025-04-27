@@ -7,6 +7,8 @@ import { IoStopCircle } from "react-icons/io5";
 import CountUp from './components/CountUp'
 import ElasticSlider from './components/Slider';
 import Threads from './components/Threads';
+import { FaRegQuestionCircle } from "react-icons/fa";
+import Tooltip from './components/Tooltip';
 
 function App(): JSX.Element {
 
@@ -24,6 +26,8 @@ function App(): JSX.Element {
     level: 1,
     played: false,
   })
+
+  const [lateGameReset, setLateGameReset] = React.useState(false)
 
   // Add ref to track latest state
   const hasSoundAlreadyPlayedRef = React.useRef(hasSoundAlreadyPlayed)
@@ -83,7 +87,7 @@ function App(): JSX.Element {
       }
 
       if (
-        shouldPlaySound(newLevel, userClass, level, currentState.level) &&
+        shouldPlaySound(newLevel, userClass, level, currentState.level, lateGameReset) &&
         !currentState.played &&
         currentState.level !== newLevel
       ) {
@@ -108,6 +112,15 @@ function App(): JSX.Element {
     }
   }
 
+  const handleLateGameReset = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    setLateGameReset(event.target.checked)
+    
+    window.electron.ipcRenderer.send('update-data', {
+      type: 'lateGameReset',
+      data: event.target.checked
+    })
+  }
+
   React.useEffect(() => {
     let interval;
     if (isRunning) {
@@ -125,9 +138,11 @@ function App(): JSX.Element {
       setUserClass(user.class)
       setLevel(user.level)
       setVolume(user.volume)
+      setLateGameReset(user.lateGameReset)
     }
   }, [])
 
+  console.log({ lateGameReset })
 
   return (
     <>
@@ -140,6 +155,14 @@ function App(): JSX.Element {
           maxValue={100}
           className='w-full mb-10'
         />
+
+        <div className='flex items-center gap-2 mb-10'>
+          <input type="checkbox" id="late-game-reset" checked={lateGameReset} onChange={handleLateGameReset} className='w-5 h-5' />
+          <label htmlFor="late-game-reset">Late Game Reset</label>
+          <Tooltip content="Path considerando Lvl 10 para Devias, 30 para LT7 e 106/120  para Icarus">
+            <FaRegQuestionCircle className='text-sm cursor-pointer' />
+          </Tooltip>
+        </div>
 
         <div className='flex justify-between items-start gap-2 w-full flex-wrap'>
           <div className='flex flex-col items-start gap-2'>

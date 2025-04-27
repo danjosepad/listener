@@ -22,8 +22,9 @@ export default function Tooltip({ children, content, position = 'top' }: Tooltip
         hidden group-hover:block
         px-2 py-1 text-sm text-white
         bg-gray-800 rounded-lg
-        whitespace-nowrap
+        max-w-xs break-words
         transition-opacity duration-150
+        min-w-40
         z-50
       `}>
         {content}
