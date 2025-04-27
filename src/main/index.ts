@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, powerSaveBlocker  } from 'electron'
+import { app, shell, BrowserWindow, ipcMain  } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
@@ -26,7 +26,6 @@ const playSound = async (volume: number): Promise<void> => {
       : path.join(process.resourcesPath, 'resources', 'coin-sound.mp3');
 
     lastSoundPlayTime = now;
-    console.log('Playing sound from:', soundPath);
     await soundPlay.play(soundPath, Math.round(volume) / 100);
     console.log('Som reproduzido com sucesso!');
   } catch (error) {
@@ -38,7 +37,7 @@ function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 600,
-    height: 600,
+    height: 750,
     resizable: false,
     show: false,
     autoHideMenuBar: true,
@@ -50,10 +49,6 @@ function createWindow(): void {
     }
   })
 
-  const id = powerSaveBlocker.start('prevent-app-suspension')
-  console.log({ powerStarted: powerSaveBlocker.isStarted(id)})
-
-  
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
   })
@@ -103,14 +98,24 @@ app.whenReady().then(() => {
   })
 
 
-  ipcMain.on('get-client-level', async (event) => {
+  ipcMain.on('get-client-level', async (event, data: { currentlySelectedUser: string }) => {
     try {
-      const level = await getLevelFromWindowTitle()
+      const level = await getLevelFromWindowTitle(data.currentlySelectedUser)
       event.returnValue = level
       console.log(`Level: ${level}`)
     } catch (err) {
       console.error(err)
       event.returnValue = null
+    }
+  })
+
+  ipcMain.on('get-process-user-list', async (event) => {
+    try{ 
+      const userList = await getProcessUserList()
+      event.returnValue = userList
+    } catch (err) {
+      console.error(err)
+      event.returnValue = []
     }
   })
 
@@ -134,10 +139,45 @@ app.on('window-all-closed', () => {
   }
 })
 
-const getLevelFromWindowTitle = (): Promise<number> => {
+const getProcessUserList = (): Promise<string[]> => {
   return new Promise((resolve, reject) => {
+    exec('powershell "Get-Process | Where-Object {$_.ProcessName -like \'*MainMU*\'} | Select-Object ProcessName, Id, MainWindowTitle"', (err, stdout, stderr) => {
+      const userList: string[] = []
+
+      if (err) {
+        reject(err)
+        return
+      }
+      
+      if (stderr) {
+        reject(new Error(stderr))
+        return
+      }
+
+      const title = stdout.trim()
+
+      if (title) {
+        const lines = title.split('\n')
+        lines.forEach(line => {
+          const levelMatch = line.match(/Nome: (\w+)/)
+        
+          if (levelMatch && levelMatch[1]) {
+            userList.push(levelMatch[1])
+          }
+        })
+      }
+
+      resolve(userList)
+
+    })
+  })
+}
+
+const getLevelFromWindowTitle = (currentlySelectedUser: string): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const powerShellFunction = 'Get-Process | Where-Object {$_.ProcessName -like \'*MainMU*\'} | Select-Object ProcessName, Id, MainWindowTitle'
     exec(
-      'powershell "Get-Process | Where-Object {$_.ProcessName -eq \'MainMU\'} | Select-Object MainWindowTitle"',
+      `powershell "${powerShellFunction}"`,
       (err, stdout, stderr) => {
         if (err) {
           reject(err)
@@ -151,12 +191,19 @@ const getLevelFromWindowTitle = (): Promise<number> => {
 
         const title = stdout.trim()
         if (title) {
-          const levelMatch = title.match(/Level:\s*(\d+)/)
-          if (levelMatch && levelMatch[1]) {
-            resolve(parseInt(levelMatch[1], 10))
-          } else {
-            reject(new Error('Valor do Level não encontrado.'))
-          }
+          const lines = title.split('\n')
+
+          lines.forEach(line => {
+            const userMatch = line.match(/Nome: (\w+)/)
+            if (userMatch && userMatch[1] === currentlySelectedUser) {
+              const levelMatch = line.match(/Level:\s*(\d+)/)
+              if (levelMatch && levelMatch[1]) {
+                resolve(parseInt(levelMatch[1], 10))
+              }
+            }
+          })
+          
+          reject(new Error('Valor do Level não encontrado.'))
         } else {
           reject(new Error('Janela não encontrada.'))
         }

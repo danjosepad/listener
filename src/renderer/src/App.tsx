@@ -9,6 +9,7 @@ import ElasticSlider from './components/Slider';
 import Threads from './components/Threads';
 import { FaRegQuestionCircle } from "react-icons/fa";
 import Tooltip from './components/Tooltip';
+import { IoReloadCircleOutline } from "react-icons/io5";
 
 function App(): JSX.Element {
 
@@ -28,6 +29,10 @@ function App(): JSX.Element {
   })
 
   const [lateGameReset, setLateGameReset] = React.useState(false)
+  const [lastSelectedUser, setLastSelectedUser] = React.useState('')
+  const [currentlySelectedUser, setCurrentlySelectedUser] = React.useState('')
+  const [userList, setUserList] = React.useState<string[]>([])
+  const [hasManuallySelectedUser, setHasManuallySelectedUser] = React.useState(false)
 
   // Add ref to track latest state
   const hasSoundAlreadyPlayedRef = React.useRef(hasSoundAlreadyPlayed)
@@ -72,7 +77,9 @@ function App(): JSX.Element {
   }
 
   const handleLevel = React.useCallback((): void => {
-    const newLevel = window.electron.ipcRenderer.sendSync('get-client-level')
+    const newLevel = window.electron.ipcRenderer.sendSync('get-client-level', {
+      currentlySelectedUser: currentlySelectedUser
+    })
     const currentState = hasSoundAlreadyPlayedRef.current
 
     if (newLevel !== null) {
@@ -98,7 +105,7 @@ function App(): JSX.Element {
         })
       }
     }
-  }, [userClass, level, volume])
+  }, [userClass, level, volume, currentlySelectedUser])
 
   const handleOnStart = (): void => {
     setIsRunning(true)
@@ -120,6 +127,28 @@ function App(): JSX.Element {
       data: event.target.checked
     })
   }
+  
+  const getUserList = React.useCallback( ({ hasManuallySelectedUser, updatedLastSelectedUser }: { hasManuallySelectedUser: boolean, updatedLastSelectedUser?: string }): void => {
+    const data = window.electron.ipcRenderer.sendSync('get-process-user-list')
+    
+    if (data.length > 0) {
+      setUserList(data)
+      const lastSelectedUserState = updatedLastSelectedUser || lastSelectedUser
+      
+      if (data.includes(lastSelectedUserState) && !hasManuallySelectedUser) {
+        setCurrentlySelectedUser(lastSelectedUserState)
+        setHasManuallySelectedUser(false)
+      } else {
+        const selectedUser = currentlySelectedUser.includes(data) ? currentlySelectedUser : data[0]
+        setCurrentlySelectedUser(selectedUser)
+        setHasManuallySelectedUser(false)
+      }
+    }
+  }, [lastSelectedUser])
+
+  const handleRefreshUserList = (): void => {
+    getUserList({ hasManuallySelectedUser })
+  }
 
   React.useEffect(() => {
     let interval;
@@ -129,7 +158,7 @@ function App(): JSX.Element {
     return () => {
       clearInterval(interval);
     };
-  }, [isRunning])
+  }, [isRunning, currentlySelectedUser])
 
   React.useEffect(() => {
     const user = window.electron.ipcRenderer.sendSync('get-user')
@@ -139,10 +168,22 @@ function App(): JSX.Element {
       setLevel(user.level)
       setVolume(user.volume)
       setLateGameReset(user.lateGameReset)
+      setLastSelectedUser(user.lastSelectedUser)
+      getUserList({ hasManuallySelectedUser: false, updatedLastSelectedUser: user.lastSelectedUser })
     }
   }, [])
 
-  console.log({ lateGameReset })
+  const handleSelectUser = (event: React.ChangeEvent<HTMLSelectElement>): void => {
+    setCurrentlySelectedUser(event.target.value)
+    setHasManuallySelectedUser(true)
+
+    window.electron.ipcRenderer.send('update-data', {
+      type: 'lastSelectedUser',
+      data: event.target.value
+    })
+  }
+
+  const selectClassName = 'bg-gray-50 border max-w-30 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"'
 
   return (
     <>
@@ -164,11 +205,21 @@ function App(): JSX.Element {
           </Tooltip>
         </div>
 
+        <div className='flex items-center gap-2 mb-10'>
+          <select value={currentlySelectedUser} onChange={handleSelectUser} className={selectClassName}>
+            {userList.map((user) => (
+              <option key={user} value={user}>{user}</option>
+            ))}
+          </select>
+
+          <IoReloadCircleOutline className='text-2xl cursor-pointer' onClick={handleRefreshUserList} />
+        </div>
+
         <div className='flex justify-between items-start gap-2 w-full flex-wrap'>
           <div className='flex flex-col items-start gap-2'>
             <label htmlFor="classe" className='text-sm'>Classe:</label>
             {isEditingClass ? (
-              <select onChange={handleSelect} onBlur={handleSelect} onInput={handleSelect} className='bg-gray-50 border max-w-30 border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"' value={userClass}>
+              <select onChange={handleSelect} onBlur={handleSelect} onInput={handleSelect} className={selectClassName} value={userClass}>
                 <option value="BK">Black Knight</option>
                 <option value="SM">Soul Master</option>
                 <option value="ELF">Elf</option>
