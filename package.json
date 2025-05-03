@@ -1,6 +1,6 @@
 {
   "name": "mu-level-helper",
-  "productName": "MU Level Helper",
+  "productName": "MU Level Helper Piupiu Edition",
   "version": "1.0.0",
   "description": "A helper tool for MU Online level tracking",
   "main": "./out/main/index.js",

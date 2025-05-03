@@ -22,8 +22,8 @@ const playSound = async (volume: number): Promise<void> => {
     
     // Get the correct path for the sound file
     const soundPath = is.dev
-      ? path.join(process.cwd(), 'resources', 'coin-sound.mp3')
-      : path.join(process.resourcesPath, 'resources', 'coin-sound.mp3');
+      ? path.join(process.cwd(), 'resources', 'audios-estourados.mp3')
+      : path.join(process.resourcesPath, 'resources', 'audios-estourados.mp3');
 
     lastSoundPlayTime = now;
     await soundPlay.play(soundPath, Math.round(volume) / 100);
